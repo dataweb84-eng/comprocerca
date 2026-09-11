@@ -52,7 +52,9 @@ router.get(
 );
 
 // Reverse geocoding: a partir de lat/lng del GPS, devuelve una etiqueta
-// legible ("Santa Rosa, La Pampa") para mostrarle al cliente.
+// legible ("Microcentro, Buenos Aires") para mostrarle al cliente. Usamos
+// Nominatim (OpenStreetMap) porque, a diferencia de GeoRef, sí devuelve
+// barrio/suburb en la mayoría de las ciudades argentinas.
 router.get(
   '/geo/ubicacion',
   asyncHandler(async (req, res) => {
@@ -61,16 +63,21 @@ router.get(
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       return res.status(400).json({ error: 'Faltan coordenadas' });
     }
-    const url = `https://apis.datos.gob.ar/georef/api/ubicacion?lat=${lat}&lon=${lng}`;
-    const apiRes = await fetch(url);
-    if (!apiRes.ok) return res.json({ label: null });
+
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=jsonv2&zoom=16&addressdetails=1`;
+    const apiRes = await fetch(url, {
+      headers: { 'User-Agent': 'ComproCerca/1.0 (contacto: soporte@comprocerca.app)' },
+    });
+    if (!apiRes.ok) return res.json({ label: null, barrio: null, ciudad: null, provincia: null });
     const data = await apiRes.json();
-    const ubicacion = data.ubicacion;
-    if (!ubicacion) return res.json({ label: null });
-    const ciudad = (ubicacion.municipio && ubicacion.municipio.nombre) || (ubicacion.departamento && ubicacion.departamento.nombre);
-    const provincia = ubicacion.provincia ? ubicacion.provincia.nombre : '';
-    const label = [ciudad, provincia].filter(Boolean).join(', ');
-    res.json({ label: label || null });
+    const a = data.address || {};
+
+    const barrio = a.suburb || a.quarter || a.neighbourhood || null;
+    const ciudad = a.city || a.town || a.village || a.municipality || null;
+    const provincia = a.state || null;
+
+    const label = [barrio, ciudad || provincia].filter(Boolean).join(', ') || null;
+    res.json({ label, barrio, ciudad, provincia });
   })
 );
 
@@ -85,6 +92,8 @@ router.get(
     const lat = parseFloat(req.query.lat);
     const lng = parseFloat(req.query.lng);
     const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
+    const radioKm = parseFloat(req.query.radio_km);
+    const hasRadio = hasCoords && Number.isFinite(radioKm) && radioKm > 0;
 
     let result = businesses.map((b) => ({
       ...b,
@@ -93,6 +102,10 @@ router.get(
           ? Math.round(haversineKm(lat, lng, b.lat, b.lng) * 10) / 10
           : null,
     }));
+
+    if (hasRadio) {
+      result = result.filter((b) => b.distancia_km !== null && b.distancia_km <= radioKm);
+    }
 
     if (hasCoords) {
       result.sort((a, b) => {

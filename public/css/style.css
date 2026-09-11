@@ -261,3 +261,62 @@ label {
   padding: 24px;
 }
 .form-login h2 { text-align: center; margin-top: 0; }
+
+/* --- Bienvenida --- */
+
+.bienvenida-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: linear-gradient(160deg, var(--verde-oscuro), var(--verde));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: bienvenida-fondo 0.4s ease;
+}
+
+@keyframes bienvenida-fondo {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.bienvenida-card {
+  background: #fff;
+  border-radius: 20px;
+  max-width: 380px;
+  width: 100%;
+  padding: 32px 24px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: bienvenida-card 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes bienvenida-card {
+  from { opacity: 0; transform: translateY(24px) scale(0.92); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.bienvenida-emoji {
+  font-size: 34px;
+  margin-bottom: 8px;
+}
+.bienvenida-emoji span {
+  display: inline-block;
+  animation: bienvenida-rebote 1.6s ease-in-out infinite;
+  margin: 0 2px;
+}
+.bienvenida-emoji span:nth-child(2) { animation-delay: 0.15s; }
+.bienvenida-emoji span:nth-child(3) { animation-delay: 0.3s; }
+.bienvenida-emoji span:nth-child(4) { animation-delay: 0.45s; }
+
+@keyframes bienvenida-rebote {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.bienvenida-card h2 { margin: 4px 0 12px; font-size: 22px; }
+.bienvenida-card .marca { color: var(--verde); }
+.bienvenida-card p { color: var(--texto-suave); font-size: 14px; line-height: 1.5; margin: 0 0 6px; }
+.bienvenida-sub { font-weight: 700; color: var(--verde-oscuro) !important; font-size: 15px !important; margin-top: 10px !important; }
+.bienvenida-card button { margin-top: 18px; }

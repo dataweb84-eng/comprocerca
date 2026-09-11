@@ -94,6 +94,15 @@ function abrirCheckout() {
   document.getElementById('campo-direccion').classList.add('oculto');
   document.getElementById('chk-error').textContent = '';
 
+  try {
+    const ubicacion = JSON.parse(localStorage.getItem('cc_ubicacion') || 'null');
+    if (ubicacion) {
+      document.getElementById('chk-calle').value = ubicacion.calle || '';
+      document.getElementById('chk-altura').value = ubicacion.altura || '';
+      document.getElementById('chk-depto').value = ubicacion.depto || '';
+    }
+  } catch (e) { /* sin ubicación guardada, no pasa nada */ }
+
   document.getElementById('modal-checkout').classList.remove('oculto');
 }
 
@@ -111,7 +120,13 @@ function setTipoEntrega(tipo) {
 async function confirmarPedido() {
   const cliente_nombre = document.getElementById('chk-nombre').value.trim();
   const cliente_telefono = document.getElementById('chk-telefono').value.trim();
-  const direccion_entrega = document.getElementById('chk-direccion').value.trim();
+  const chkCalle = document.getElementById('chk-calle').value.trim();
+  const chkAltura = document.getElementById('chk-altura').value.trim();
+  const chkDepto = document.getElementById('chk-depto').value.trim();
+  const partesDireccion = [];
+  if (chkCalle) partesDireccion.push(chkAltura ? `${chkCalle} ${chkAltura}` : chkCalle);
+  if (chkDepto) partesDireccion.push(chkDepto);
+  const direccion_entrega = partesDireccion.join(', ');
   const errEl = document.getElementById('chk-error');
 
   if (!cliente_nombre || !cliente_telefono) {

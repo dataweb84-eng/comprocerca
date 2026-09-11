@@ -13,6 +13,24 @@
   <a href="/comercio-login.html" class="btn secundario chico" style="background:#fff;">Soy comercio</a>
 </div>
 
+<!-- Bienvenida (solo la primera vez que se abre la app) -->
+<div id="bienvenida" class="bienvenida-overlay oculto">
+  <div class="bienvenida-card">
+    <div class="bienvenida-emoji">
+      <span>🛒</span><span>🥖</span><span>🧀</span><span>🍅</span>
+    </div>
+    <h2>¡Hola! Somos <span class="marca">ComproCerca</span></h2>
+    <p>
+      Estamos para darte esa comodidad que esperabas: nada de hacer cola.
+      Armá tu pedido desde tu casa o el trabajo, en el comercio de
+      confianza cerca tuyo, y pasá a buscarlo (o pedilo por envío)
+      cuando esté listo.
+    </p>
+    <p class="bienvenida-sub">¡Bienvenido/a! 🎉</p>
+    <button class="ancho" onclick="cerrarBienvenida()">¡Empezar a pedir!</button>
+  </div>
+</div>
+
 <div class="contenedor">
 
   <div id="estado-inicial" class="estado-carga">Buscando comercios cerca tuyo…</div>
@@ -20,11 +38,23 @@
   <!-- Paso de ubicación (GPS falló/denegado, o el cliente quiere cambiarla) -->
   <div id="paso-ubicacion" class="tarjeta oculto">
     <h3 style="margin-top:0;">¿Dónde estás?</h3>
-    <p style="color:var(--texto-suave);font-size:13px;margin-top:-6px;">Así te mostramos los comercios de tu zona.</p>
+    <p style="color:var(--texto-suave);font-size:13px;margin-top:-6px;">Así te mostramos los comercios a 8 cuadras a la redonda.</p>
     <button class="ancho" onclick="usarGeolocalizacion()">📍 Usar mi ubicación</button>
     <p style="text-align:center;color:var(--texto-suave);font-size:12px;margin:12px 0;">— o cargá tu dirección —</p>
-    <label>Dirección</label>
-    <input id="ub-direccion" placeholder="Calle y número" />
+
+    <label>Calle</label>
+    <input id="ub-calle" placeholder="Nombre de la calle" />
+    <div class="fila">
+      <div>
+        <label>Altura</label>
+        <input id="ub-altura" placeholder="Número" inputmode="numeric" />
+      </div>
+      <div>
+        <label>Piso / depto (opcional)</label>
+        <input id="ub-depto" placeholder="Ej: 3° B" />
+      </div>
+    </div>
+
     <label>Ciudad</label>
     <div class="autocomplete-wrap">
       <input id="ub-ciudad" placeholder="Empezá a escribir tu ciudad..." autocomplete="off" />
@@ -39,6 +69,8 @@
     <span>📍 <span id="ubicacion-label"></span></span>
     <button class="chico secundario" onclick="cambiarUbicacion()">Cambiar</button>
   </div>
+
+  <div id="aviso-radio" class="aviso oculto"></div>
 
   <div id="mapa-comercios" class="oculto"></div>
 

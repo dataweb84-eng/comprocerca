@@ -81,6 +81,40 @@ router.get(
   })
 );
 
+// Geocodifica una calle+altura dentro de una provincia/localidad usando el
+// padrón oficial de direcciones de GeoRef. Da una ubicación mucho más
+// precisa que el centroide de la ciudad (que era lo que se usaba antes,
+// y hacía que el mapa marcara el centro de la ciudad en vez de la
+// direccion real del cliente).
+router.get(
+  '/geo/direccion',
+  asyncHandler(async (req, res) => {
+    const calle = (req.query.calle || '').toString().trim();
+    const altura = (req.query.altura || '').toString().trim();
+    const provincia = (req.query.provincia || '').toString().trim();
+    const localidad = (req.query.localidad || '').toString().trim();
+
+    if (!calle || !provincia) return res.json({ lat: null, lng: null });
+
+    const params = new URLSearchParams({
+      direccion: altura ? `${calle} ${altura}` : calle,
+      provincia,
+      max: '1',
+      campos: 'estandar',
+    });
+    if (localidad) params.set('localidad', localidad);
+
+    const url = `https://apis.datos.gob.ar/georef/api/direcciones?${params.toString()}`;
+    const apiRes = await fetch(url);
+    if (!apiRes.ok) return res.json({ lat: null, lng: null });
+    const data = await apiRes.json();
+    const match = (data.direcciones || [])[0];
+    if (!match || !match.ubicacion) return res.json({ lat: null, lng: null });
+
+    res.json({ lat: match.ubicacion.lat, lng: match.ubicacion.lon, nomenclatura: match.nomenclatura });
+  })
+);
+
 router.get(
   '/comercios',
   asyncHandler(async (req, res) => {

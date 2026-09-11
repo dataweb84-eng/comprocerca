@@ -196,7 +196,7 @@ function renderSugerencias(ciudades) {
   });
 }
 
-function confirmarUbicacionManual() {
+async function confirmarUbicacionManual() {
   const errEl = document.getElementById('ub-error');
   errEl.textContent = '';
 
@@ -218,15 +218,30 @@ function confirmarUbicacionManual() {
     ? `${direccionTexto}, ${ciudadSeleccionada.nombre}, ${ciudadSeleccionada.provincia}`
     : `${ciudadSeleccionada.nombre}, ${ciudadSeleccionada.provincia}`;
 
-  const loc = {
-    lat: ciudadSeleccionada.lat,
-    lng: ciudadSeleccionada.lng,
-    label,
-    direccion: direccionTexto,
-    calle,
-    altura,
-    depto,
-  };
+  // Por defecto usamos el centro de la ciudad; si el cliente cargó la
+  // calle, intentamos geocodificar la dirección exacta contra el padrón
+  // oficial para no terminar mostrando siempre el centro de la ciudad.
+  let lat = ciudadSeleccionada.lat;
+  let lng = ciudadSeleccionada.lng;
+
+  if (calle) {
+    try {
+      const qs = new URLSearchParams({
+        calle,
+        altura,
+        provincia: ciudadSeleccionada.provincia,
+        localidad: ciudadSeleccionada.nombre,
+      });
+      const r = await fetch(`/api/geo/direccion?${qs.toString()}`);
+      const data = await r.json();
+      if (Number.isFinite(data.lat) && Number.isFinite(data.lng)) {
+        lat = data.lat;
+        lng = data.lng;
+      }
+    } catch (e) { /* si falla la geocodificación, seguimos con el centro de la ciudad */ }
+  }
+
+  const loc = { lat, lng, label, direccion: direccionTexto, calle, altura, depto };
   guardarUbicacion(loc);
   mostrarResultados(loc);
 }

@@ -4,50 +4,278 @@ function escapeHtml(str) {
   }[c]));
 }
 
-async function cargarComercios(lat, lng) {
-  const listaEl = document.getElementById('lista');
-  const params = lat != null ? `?lat=${lat}&lng=${lng}` : '';
+const STORAGE_KEY = 'cc_ubicacion';
+let mapa = null;
+let ciudadSeleccionada = null;
+let debounceCiudad = null;
+let comerciosZona = [];
+
+function guardarUbicacion(loc) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(loc));
+}
+
+function leerUbicacion() {
   try {
-    const res = await fetch(`/api/comercios${params}`);
-    const comercios = await res.json();
-    if (comercios.length === 0) {
-      listaEl.innerHTML = '<div class="estado-vacio">Todavía no hay comercios cargados en tu zona.</div>';
-      return;
-    }
-    listaEl.innerHTML = comercios.map((c) => `
-      <div class="tarjeta comercio-card" onclick="location.href='/negocio.html?id=${c.id}'">
-        <div class="info">
-          <h3>${escapeHtml(c.nombre)}</h3>
-          <p>${escapeHtml(c.categoria || '')} · ${escapeHtml(c.direccion || '')}</p>
-          <div class="badges">
-            ${c.acepta_envio ? '<span class="badge">Envío</span>' : ''}
-            ${c.acepta_retiro ? '<span class="badge naranja">Retiro en local</span>' : ''}
-          </div>
-        </div>
-        ${c.distancia_km != null ? `<div class="distancia">${c.distancia_km} km</div>` : ''}
-      </div>
-    `).join('');
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
   } catch (e) {
-    listaEl.innerHTML = '<div class="estado-vacio">No pudimos cargar los comercios. Probá de nuevo más tarde.</div>';
+    return null;
   }
 }
 
-function mostrarAviso(texto) {
-  const aviso = document.getElementById('aviso-ubicacion');
-  aviso.textContent = texto;
-  aviso.classList.remove('oculto');
+function mostrar(id) {
+  document.getElementById(id).classList.remove('oculto');
+}
+function ocultar(id) {
+  document.getElementById(id).classList.add('oculto');
 }
 
-if (!navigator.geolocation) {
-  mostrarAviso('Tu navegador no soporta geolocalización. Te mostramos todos los comercios.');
-  cargarComercios();
-} else {
+// --- Arranque ---
+
+function init() {
+  const guardada = leerUbicacion();
+  if (guardada) {
+    mostrarResultados(guardada);
+    return;
+  }
+
+  ocultar('estado-inicial');
+  if (!navigator.geolocation) {
+    mostrarPasoUbicacion();
+    return;
+  }
+
+  document.getElementById('estado-inicial').classList.remove('oculto');
   navigator.geolocation.getCurrentPosition(
-    (pos) => cargarComercios(pos.coords.latitude, pos.coords.longitude),
+    async (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      let label = 'Tu ubicación actual';
+      try {
+        const r = await fetch(`/api/geo/ubicacion?lat=${lat}&lng=${lng}`);
+        const data = await r.json();
+        if (data.label) label = data.label;
+      } catch (e) { /* seguimos con el label genérico */ }
+      const loc = { lat, lng, label, direccion: '' };
+      guardarUbicacion(loc);
+      mostrarResultados(loc);
+    },
     () => {
-      mostrarAviso('No pudimos acceder a tu ubicación. Te mostramos todos los comercios.');
-      cargarComercios();
+      ocultar('estado-inicial');
+      mostrarPasoUbicacion();
     },
     { timeout: 8000 }
   );
 }
+
+function mostrarPasoUbicacion() {
+  ocultar('estado-inicial');
+  ocultar('barra-ubicacion');
+  ocultar('mapa-comercios');
+  ocultar('btn-ver-todos');
+  ocultar('lista');
+  ocultar('sin-comercios');
+  mostrar('paso-ubicacion');
+}
+
+function usarGeolocalizacion() {
+  if (!navigator.geolocation) {
+    document.getElementById('ub-error').textContent = 'Tu navegador no soporta geolocalización.';
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      let label = 'Tu ubicación actual';
+      try {
+        const r = await fetch(`/api/geo/ubicacion?lat=${lat}&lng=${lng}`);
+        const data = await r.json();
+        if (data.label) label = data.label;
+      } catch (e) { /* noop */ }
+      const loc = { lat, lng, label, direccion: '' };
+      guardarUbicacion(loc);
+      mostrarResultados(loc);
+    },
+    () => {
+      document.getElementById('ub-error').textContent =
+        'No pudimos acceder a tu ubicación. Completá la dirección y ciudad.';
+    },
+    { timeout: 8000 }
+  );
+}
+
+// --- Autocompletar ciudad ---
+
+document.addEventListener('DOMContentLoaded', () => {
+  const input = document.getElementById('ub-ciudad');
+  input.addEventListener('input', () => {
+    ciudadSeleccionada = null;
+    const q = input.value.trim();
+    clearTimeout(debounceCiudad);
+    if (q.length < 2) {
+      renderSugerencias([]);
+      return;
+    }
+    debounceCiudad = setTimeout(() => buscarCiudades(q), 300);
+  });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.autocomplete-wrap')) renderSugerencias([]);
+  });
+});
+
+async function buscarCiudades(q) {
+  try {
+    const res = await fetch(`/api/geo/localidades?q=${encodeURIComponent(q)}`);
+    const ciudades = await res.json();
+    renderSugerencias(ciudades);
+  } catch (e) {
+    renderSugerencias([]);
+  }
+}
+
+function renderSugerencias(ciudades) {
+  const cont = document.getElementById('ub-sugerencias');
+  if (!ciudades.length) {
+    cont.classList.add('oculto');
+    cont.innerHTML = '';
+    return;
+  }
+  cont.innerHTML = ciudades.map((c, i) => `
+    <div class="autocomplete-item" data-i="${i}">${escapeHtml(c.nombre)}<span>${escapeHtml(c.provincia)}</span></div>
+  `).join('');
+  cont.classList.remove('oculto');
+  cont.querySelectorAll('.autocomplete-item').forEach((el) => {
+    el.addEventListener('click', () => {
+      const c = ciudades[parseInt(el.dataset.i, 10)];
+      ciudadSeleccionada = c;
+      document.getElementById('ub-ciudad').value = `${c.nombre}, ${c.provincia}`;
+      renderSugerencias([]);
+    });
+  });
+}
+
+function confirmarUbicacionManual() {
+  const errEl = document.getElementById('ub-error');
+  errEl.textContent = '';
+  const direccion = document.getElementById('ub-direccion').value.trim();
+
+  if (!ciudadSeleccionada) {
+    errEl.textContent = 'Elegí tu ciudad de la lista de sugerencias.';
+    return;
+  }
+
+  const label = direccion
+    ? `${direccion}, ${ciudadSeleccionada.nombre}, ${ciudadSeleccionada.provincia}`
+    : `${ciudadSeleccionada.nombre}, ${ciudadSeleccionada.provincia}`;
+
+  const loc = {
+    lat: ciudadSeleccionada.lat,
+    lng: ciudadSeleccionada.lng,
+    label,
+    direccion,
+  };
+  guardarUbicacion(loc);
+  mostrarResultados(loc);
+}
+
+function cambiarUbicacion() {
+  localStorage.removeItem(STORAGE_KEY);
+  if (mapa) {
+    mapa.remove();
+    mapa = null;
+  }
+  document.getElementById('ub-direccion').value = '';
+  document.getElementById('ub-ciudad').value = '';
+  ciudadSeleccionada = null;
+  mostrarPasoUbicacion();
+}
+
+// --- Resultados: mapa + lista ---
+
+async function mostrarResultados(loc) {
+  ocultar('estado-inicial');
+  ocultar('paso-ubicacion');
+
+  document.getElementById('ubicacion-label').textContent = loc.label;
+  mostrar('barra-ubicacion');
+
+  mostrar('mapa-comercios');
+  if (!mapa) {
+    mapa = L.map('mapa-comercios').setView([loc.lat, loc.lng], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(mapa);
+  } else {
+    mapa.setView([loc.lat, loc.lng], 13);
+  }
+  L.circleMarker([loc.lat, loc.lng], {
+    radius: 8,
+    color: '#1a7f5a',
+    fillColor: '#1a7f5a',
+    fillOpacity: 0.9,
+  }).addTo(mapa).bindPopup('Estás acá');
+
+  try {
+    const res = await fetch(`/api/comercios?lat=${loc.lat}&lng=${loc.lng}`);
+    comerciosZona = await res.json();
+  } catch (e) {
+    comerciosZona = [];
+  }
+
+  if (comerciosZona.length === 0) {
+    mostrar('sin-comercios');
+    ocultar('btn-ver-todos');
+    ocultar('lista');
+    return;
+  }
+  ocultar('sin-comercios');
+
+  comerciosZona.forEach((c) => {
+    if (!Number.isFinite(c.lat) || !Number.isFinite(c.lng)) return;
+    const marker = L.marker([c.lat, c.lng]).addTo(mapa);
+    const popupHtml = `
+      <strong>${escapeHtml(c.nombre)}</strong><br/>
+      <span style="color:#666;font-size:12px;">${escapeHtml(c.categoria || '')}</span><br/>
+      <a href="/negocio.html?id=${c.id}" style="color:#1a7f5a;font-weight:600;">Ver comercio →</a>
+    `;
+    marker.bindPopup(popupHtml);
+  });
+
+  const btn = document.getElementById('btn-ver-todos');
+  btn.textContent = `Ver los ${comerciosZona.length} comercios de tu zona`;
+  mostrar('btn-ver-todos');
+  renderLista(comerciosZona);
+}
+
+function renderLista(comercios) {
+  document.getElementById('lista').innerHTML = comercios.map((c) => `
+    <div class="tarjeta comercio-card" onclick="location.href='/negocio.html?id=${c.id}'">
+      <div class="info">
+        <h3>${escapeHtml(c.nombre)}</h3>
+        <p>${escapeHtml(c.categoria || '')} · ${escapeHtml(c.direccion || '')}</p>
+        <div class="badges">
+          ${c.acepta_envio ? '<span class="badge">Envío</span>' : ''}
+          ${c.acepta_retiro ? '<span class="badge naranja">Retiro en local</span>' : ''}
+        </div>
+      </div>
+      ${c.distancia_km != null ? `<div class="distancia">${c.distancia_km} km</div>` : ''}
+    </div>
+  `).join('');
+}
+
+function toggleListaComercios() {
+  const lista = document.getElementById('lista');
+  const btn = document.getElementById('btn-ver-todos');
+  const oculta = lista.classList.contains('oculto');
+  if (oculta) {
+    lista.classList.remove('oculto');
+    btn.textContent = 'Ocultar lista';
+    lista.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } else {
+    lista.classList.add('oculto');
+    btn.textContent = `Ver los ${comerciosZona.length} comercios de tu zona`;
+  }
+}
+
+init();

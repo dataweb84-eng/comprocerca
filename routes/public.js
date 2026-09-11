@@ -24,6 +24,56 @@ router.get('/config', (req, res) => {
   });
 });
 
+// Proxy a la API pública GeoRef (datos.gob.ar) para autocompletar ciudades
+// de todo el país sin tener que embeber un listado gigante en el frontend.
+router.get(
+  '/geo/localidades',
+  asyncHandler(async (req, res) => {
+    const q = (req.query.q || '').toString().trim();
+    if (q.length < 2) return res.json([]);
+
+    const url = `https://apis.datos.gob.ar/georef/api/localidades?nombre=${encodeURIComponent(
+      q
+    )}&max=8&campos=nombre,provincia,centroide&orden=nombre`;
+    const apiRes = await fetch(url);
+    if (!apiRes.ok) return res.json([]);
+    const data = await apiRes.json();
+
+    const resultados = (data.localidades || [])
+      .filter((l) => l.centroide)
+      .map((l) => ({
+        nombre: l.nombre,
+        provincia: l.provincia ? l.provincia.nombre : '',
+        lat: l.centroide.lat,
+        lng: l.centroide.lon,
+      }));
+    res.json(resultados);
+  })
+);
+
+// Reverse geocoding: a partir de lat/lng del GPS, devuelve una etiqueta
+// legible ("Santa Rosa, La Pampa") para mostrarle al cliente.
+router.get(
+  '/geo/ubicacion',
+  asyncHandler(async (req, res) => {
+    const lat = parseFloat(req.query.lat);
+    const lng = parseFloat(req.query.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return res.status(400).json({ error: 'Faltan coordenadas' });
+    }
+    const url = `https://apis.datos.gob.ar/georef/api/ubicacion?lat=${lat}&lon=${lng}`;
+    const apiRes = await fetch(url);
+    if (!apiRes.ok) return res.json({ label: null });
+    const data = await apiRes.json();
+    const ubicacion = data.ubicacion;
+    if (!ubicacion) return res.json({ label: null });
+    const ciudad = (ubicacion.municipio && ubicacion.municipio.nombre) || (ubicacion.departamento && ubicacion.departamento.nombre);
+    const provincia = ubicacion.provincia ? ubicacion.provincia.nombre : '';
+    const label = [ciudad, provincia].filter(Boolean).join(', ');
+    res.json({ label: label || null });
+  })
+);
+
 router.get(
   '/comercios',
   asyncHandler(async (req, res) => {

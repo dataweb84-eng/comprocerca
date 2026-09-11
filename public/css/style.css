@@ -202,6 +202,59 @@ label {
 
 #mapa-picker { height: 260px; border-radius: 8px; margin-top: 6px; }
 
+#mapa-comercios {
+  height: 320px;
+  border-radius: var(--radio);
+  margin-bottom: 12px;
+  box-shadow: var(--sombra);
+}
+
+.barra-ubicacion {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #eef3f0;
+  color: var(--verde-oscuro);
+  border-radius: var(--radio);
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.barra-ubicacion span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 10px;
+}
+
+.autocomplete-wrap { position: relative; }
+.autocomplete-lista {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  box-shadow: var(--sombra);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 40;
+}
+.autocomplete-item {
+  padding: 10px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid var(--borde);
+}
+.autocomplete-item:last-child { border-bottom: none; }
+.autocomplete-item:hover { background: #f5f6f4; }
+.autocomplete-item span { color: var(--texto-suave); font-size: 12px; white-space: nowrap; }
+
 .form-login {
   max-width: 340px;
   margin: 60px auto;

@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>ComproCerca — comercios de tu zona</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
@@ -13,10 +14,42 @@
 </div>
 
 <div class="contenedor">
-  <div id="aviso-ubicacion" class="aviso oculto"></div>
-  <div id="lista" class="estado-carga">Buscando comercios cerca tuyo…</div>
+
+  <div id="estado-inicial" class="estado-carga">Buscando comercios cerca tuyo…</div>
+
+  <!-- Paso de ubicación (GPS falló/denegado, o el cliente quiere cambiarla) -->
+  <div id="paso-ubicacion" class="tarjeta oculto">
+    <h3 style="margin-top:0;">¿Dónde estás?</h3>
+    <p style="color:var(--texto-suave);font-size:13px;margin-top:-6px;">Así te mostramos los comercios de tu zona.</p>
+    <button class="ancho" onclick="usarGeolocalizacion()">📍 Usar mi ubicación</button>
+    <p style="text-align:center;color:var(--texto-suave);font-size:12px;margin:12px 0;">— o cargá tu dirección —</p>
+    <label>Dirección</label>
+    <input id="ub-direccion" placeholder="Calle y número" />
+    <label>Ciudad</label>
+    <div class="autocomplete-wrap">
+      <input id="ub-ciudad" placeholder="Empezá a escribir tu ciudad..." autocomplete="off" />
+      <div id="ub-sugerencias" class="autocomplete-lista oculto"></div>
+    </div>
+    <div id="ub-error" class="err"></div>
+    <button class="ancho" style="margin-top:12px;" onclick="confirmarUbicacionManual()">Confirmar ubicación</button>
+  </div>
+
+  <!-- Resultado: barra de ubicación + mapa + lista -->
+  <div id="barra-ubicacion" class="barra-ubicacion oculto">
+    <span>📍 <span id="ubicacion-label"></span></span>
+    <button class="chico secundario" onclick="cambiarUbicacion()">Cambiar</button>
+  </div>
+
+  <div id="mapa-comercios" class="oculto"></div>
+
+  <div id="sin-comercios" class="estado-vacio oculto">Todavía no hay comercios cargados en tu zona.</div>
+
+  <button id="btn-ver-todos" class="ancho secundario oculto" style="margin-bottom:12px;" onclick="toggleListaComercios()"></button>
+
+  <div id="lista" class="oculto"></div>
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="/js/cliente.js"></script>
 </body>
 </html>

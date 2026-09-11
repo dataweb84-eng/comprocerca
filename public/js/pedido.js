@@ -43,17 +43,25 @@ async function cargar() {
   const res = await fetch(`/api/pedidos/${publicId}`);
   if (!res.ok) {
     document.getElementById('contenido').innerHTML = '<div class="estado-vacio">No encontramos ese pedido.</div>';
-    return;
+    return false;
   }
   const pedido = await res.json();
   render(pedido);
-
-  const socket = io();
-  socket.on('connect', () => socket.emit('join_pedido', publicId));
-  socket.on('estado_actualizado', ({ estado }) => {
-    pedido.estado = estado;
-    render(pedido);
-  });
+  return true;
 }
 
-cargar();
+async function conectarRealtime() {
+  const cfg = await fetch('/api/config').then((r) => r.json());
+  const sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+  sb.channel(`order_events_pedido_${publicId}`)
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'order_events', filter: `public_id=eq.${publicId}` },
+      () => cargar()
+    )
+    .subscribe();
+}
+
+cargar().then((ok) => {
+  if (ok) conectarRealtime();
+});

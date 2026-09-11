@@ -79,6 +79,12 @@ router.post(
           [orderId, it.product_id, it.product_nombre, it.cantidad, it.unidad, it.nota, it.precio_snapshot]
         );
       }
+      // Evento liviano (sin datos del cliente) para que Supabase Realtime avise
+      // al panel del comerciante sin exponer info sensible por ese canal.
+      await client.query(
+        'INSERT INTO order_events (business_id, public_id, estado) VALUES ($1, $2, $3)',
+        [business_id, publicId, 'pendiente']
+      );
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK');
@@ -86,15 +92,6 @@ router.post(
     } finally {
       client.release();
     }
-
-    const io = req.app.get('io');
-    io.to(`comercio_${business_id}`).emit('nuevo_pedido', {
-      id: orderId,
-      public_id: publicId,
-      cliente_nombre,
-      tipo_entrega,
-      items: resolvedItems,
-    });
 
     res.status(201).json({ public_id: publicId });
   })

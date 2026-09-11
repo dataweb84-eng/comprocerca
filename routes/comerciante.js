@@ -142,9 +142,11 @@ router.patch(
     if (!order) return res.status(404).json({ error: 'Pedido no encontrado' });
 
     await db.run('UPDATE orders SET estado = $1 WHERE id = $2', [estado, order.id]);
-
-    const io = req.app.get('io');
-    io.to(`pedido_${order.public_id}`).emit('estado_actualizado', { estado });
+    await db.run('INSERT INTO order_events (business_id, public_id, estado) VALUES ($1, $2, $3)', [
+      order.business_id,
+      order.public_id,
+      estado,
+    ]);
 
     res.json({ ok: true });
   })

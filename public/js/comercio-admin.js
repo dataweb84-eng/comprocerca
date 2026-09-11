@@ -26,18 +26,28 @@ function beep() {
   } catch (e) { /* noop */ }
 }
 
+async function conectarRealtime(businessId) {
+  const cfg = await fetch('/api/config').then((r) => r.json());
+  const sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+  sb.channel(`order_events_comercio_${businessId}`)
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'order_events', filter: `business_id=eq.${businessId}` },
+      () => {
+        beep();
+        cargarPedidos();
+      }
+    )
+    .subscribe();
+}
+
 async function init() {
   const res = await fetch('/api/comercio/me');
   if (!res.ok) { location.href = '/comercio-login.html'; return; }
   const me = await res.json();
   document.getElementById('nombre-negocio').textContent = me.nombre;
 
-  const socket = io();
-  socket.on('connect', () => socket.emit('join_comercio'));
-  socket.on('nuevo_pedido', () => {
-    beep();
-    cargarPedidos();
-  });
+  conectarRealtime(me.id);
 
   await cargarPerfil();
   await cargarPedidos();

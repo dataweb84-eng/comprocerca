@@ -87,6 +87,36 @@ CREATE TABLE IF NOT EXISTS admin_users (
   username TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL
 );
+
+-- Tabla de eventos "livianos" para Supabase Realtime: solo metadata no sensible
+-- (business_id, public_id, estado). Los datos protegidos del pedido (cliente,
+-- telefono, items) siguen viajando solo por nuestra API con sesión/UUID, nunca
+-- por acá, porque esta tabla es legible públicamente vía Realtime (anon key).
+CREATE TABLE IF NOT EXISTS order_events (
+  id SERIAL PRIMARY KEY,
+  business_id INTEGER NOT NULL,
+  public_id UUID NOT NULL,
+  estado TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE order_events ENABLE ROW LEVEL SECURITY;
+`;
+
+const REALTIME_SETUP = `
+DROP POLICY IF EXISTS order_events_select_anon ON order_events;
+CREATE POLICY order_events_select_anon ON order_events FOR SELECT TO anon, authenticated USING (true);
+GRANT SELECT ON order_events TO anon, authenticated;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'order_events'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.order_events;
+  END IF;
+END $$;
 `;
 
 async function seed() {
@@ -118,6 +148,11 @@ async function seed() {
 async function init() {
   await pool.query(SCHEMA);
   await seed();
+  try {
+    await pool.query(REALTIME_SETUP);
+  } catch (err) {
+    console.warn('[realtime] No se pudo configurar order_events para Supabase Realtime:', err.message);
+  }
 }
 
 module.exports = { pool, get, all, run, init };

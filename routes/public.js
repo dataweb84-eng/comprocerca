@@ -17,6 +17,13 @@ function haversineKm(lat1, lng1, lat2, lng2) {
   return R * c;
 }
 
+router.get('/config', (req, res) => {
+  res.json({
+    supabaseUrl: process.env.SUPABASE_URL,
+    supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
+  });
+});
+
 router.get(
   '/comercios',
   asyncHandler(async (req, res) => {

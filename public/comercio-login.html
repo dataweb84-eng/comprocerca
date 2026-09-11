@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ingreso comercios — ComproCerca</title>
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+<div class="tarjeta form-login">
+  <h2>Ingreso comercios</h2>
+  <label>Usuario</label>
+  <input id="username" />
+  <label>Contraseña</label>
+  <input id="password" type="password" />
+  <div id="error" class="err"></div>
+  <button class="ancho" style="margin-top:16px;" onclick="login()">Ingresar</button>
+</div>
+<script>
+async function login() {
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const errEl = document.getElementById('error');
+  const res = await fetch('/api/comercio/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) { errEl.textContent = data.error || 'Error al ingresar'; return; }
+  location.href = '/comercio-admin.html';
+}
+document.getElementById('password').addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
+</script>
+</body>
+</html>

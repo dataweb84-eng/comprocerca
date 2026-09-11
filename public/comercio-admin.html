@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Panel comercio — ComproCerca</title>
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+<div class="topbar">
+  <h1 id="nombre-negocio">Panel comercio</h1>
+  <button class="chico secundario" style="background:#fff;" onclick="logout()">Salir</button>
+</div>
+
+<div class="contenedor">
+  <div class="tabs">
+    <button id="tab-pedidos" class="activo" onclick="cambiarTab('pedidos')">Pedidos</button>
+    <button id="tab-productos" onclick="cambiarTab('productos')">Productos</button>
+    <button id="tab-perfil" onclick="cambiarTab('perfil')">Mi comercio</button>
+  </div>
+
+  <div id="vista-pedidos"></div>
+
+  <div id="vista-productos" class="oculto">
+    <div class="tarjeta">
+      <h4 style="margin-top:0;">Nuevo producto</h4>
+      <label>Nombre</label>
+      <input id="p-nombre" />
+      <label>Descripción</label>
+      <input id="p-descripcion" />
+      <div class="fila">
+        <div>
+          <label>Precio</label>
+          <input id="p-precio" type="number" step="any" />
+        </div>
+        <div>
+          <label>Unidad</label>
+          <input id="p-unidad" placeholder="kg, gramos, unidad..." />
+        </div>
+      </div>
+      <div id="p-error" class="err"></div>
+      <button class="ancho" style="margin-top:12px;" onclick="crearProducto()">Agregar producto</button>
+    </div>
+    <div id="lista-productos"></div>
+  </div>
+
+  <div id="vista-perfil" class="oculto">
+    <div class="tarjeta">
+      <label>Dirección</label>
+      <input id="perfil-direccion" />
+      <label>Teléfono</label>
+      <input id="perfil-telefono" />
+      <label style="display:flex;align-items:center;gap:8px;margin-top:14px;">
+        <input type="checkbox" id="perfil-envio" style="width:auto;" /> Ofrezco envío
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="perfil-retiro" style="width:auto;" /> Ofrezco retiro en local
+      </label>
+      <div id="perfil-msg" class="ok"></div>
+      <button class="ancho" style="margin-top:14px;" onclick="guardarPerfil()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/comercio-admin.js"></script>
+</body>
+</html>

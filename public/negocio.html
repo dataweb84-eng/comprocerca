@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Comercio — ComproCerca</title>
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+<div class="topbar">
+  <a href="/" class="volver">←</a>
+  <h1 id="nombre-comercio">Cargando…</h1>
+  <span style="width:20px"></span>
+</div>
+
+<div class="contenedor" id="contenido" style="padding-bottom:90px;">
+  <div class="estado-carga">Cargando catálogo…</div>
+</div>
+
+<div id="barra-carrito" class="carrito-barra oculto">
+  <span id="resumen-carrito"></span>
+  <button onclick="abrirCheckout()">Hacer pedido</button>
+</div>
+
+<!-- Modal checkout -->
+<div id="modal-checkout" class="oculto" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:30;display:flex;align-items:flex-end;">
+  <div class="tarjeta" style="width:100%;max-height:85vh;overflow:auto;border-radius:16px 16px 0 0;margin:0;">
+    <h3 style="margin-top:0;">Confirmar pedido</h3>
+    <div id="resumen-items"></div>
+
+    <label>Tu nombre</label>
+    <input id="chk-nombre" placeholder="Nombre y apellido" />
+
+    <label>Teléfono</label>
+    <input id="chk-telefono" placeholder="Para avisarte del pedido" />
+
+    <label>Entrega</label>
+    <div class="fila">
+      <button type="button" id="btn-retiro" class="secundario" onclick="setTipoEntrega('retiro')">Retiro en local</button>
+      <button type="button" id="btn-envio" class="secundario" onclick="setTipoEntrega('envio')">Envío</button>
+    </div>
+
+    <div id="campo-direccion" class="oculto">
+      <label>Dirección de envío</label>
+      <input id="chk-direccion" placeholder="Calle, número, referencia" />
+    </div>
+
+    <p style="font-size:12px;color:var(--texto-suave);margin-top:14px;">
+      El pago se realiza en el comercio (efectivo o tarjeta), no se cobra desde la app.
+    </p>
+
+    <div id="chk-error" class="err"></div>
+
+    <div class="fila" style="margin-top:14px;">
+      <button type="button" class="secundario" onclick="cerrarCheckout()">Cancelar</button>
+      <button type="button" onclick="confirmarPedido()">Confirmar pedido</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/negocio.js"></script>
+</body>
+</html>

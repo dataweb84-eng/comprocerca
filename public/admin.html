@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Panel admin — ComproCerca</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+<div class="topbar">
+  <h1>Panel administrador</h1>
+  <button class="chico secundario" style="background:#fff;" onclick="logout()">Salir</button>
+</div>
+
+<div class="contenedor">
+  <div class="tabs">
+    <button id="tab-comercios" class="activo" onclick="cambiarTab('comercios')">Comercios</button>
+    <button id="tab-planes" onclick="cambiarTab('planes')">Planes</button>
+  </div>
+
+  <div id="vista-comercios">
+    <div class="tarjeta">
+      <h4 id="form-comercio-titulo" style="margin-top:0;">Nuevo comercio</h4>
+      <label>Nombre</label>
+      <input id="c-nombre" />
+      <label>Categoría</label>
+      <input id="c-categoria" placeholder="Despensa, panadería, verdulería..." />
+      <label>Dirección</label>
+      <input id="c-direccion" />
+      <label>Teléfono</label>
+      <input id="c-telefono" />
+      <label>Plan</label>
+      <select id="c-plan"></select>
+      <label>Ubicación (tocá el mapa para marcar el local)</label>
+      <div id="mapa-picker"></div>
+      <div class="fila">
+        <div>
+          <label>Usuario de acceso</label>
+          <input id="c-username" />
+        </div>
+        <div>
+          <label id="label-password">Contraseña</label>
+          <input id="c-password" type="password" />
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:14px;">
+        <input type="checkbox" id="c-envio" style="width:auto;" checked /> Ofrece envío
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="c-retiro" style="width:auto;" checked /> Ofrece retiro en local
+      </label>
+      <div id="c-error" class="err"></div>
+      <div class="fila" style="margin-top:14px;">
+        <button id="btn-cancelar-edicion" class="secundario oculto" onclick="cancelarEdicion()">Cancelar edición</button>
+        <button class="ancho" id="btn-guardar-comercio" onclick="guardarComercio()">Crear comercio</button>
+      </div>
+    </div>
+
+    <div id="lista-comercios"></div>
+  </div>
+
+  <div id="vista-planes" class="oculto">
+    <div class="tarjeta">
+      <h4 style="margin-top:0;">Nuevo plan</h4>
+      <label>Nombre</label>
+      <input id="pl-nombre" />
+      <div class="fila">
+        <div>
+          <label>Máx. productos</label>
+          <input id="pl-max" type="number" />
+        </div>
+        <div>
+          <label>Precio ($)</label>
+          <input id="pl-precio" type="number" step="any" />
+        </div>
+      </div>
+      <label>Descripción</label>
+      <input id="pl-descripcion" />
+      <div id="pl-error" class="err"></div>
+      <button class="ancho" style="margin-top:12px;" onclick="crearPlan()">Crear plan</button>
+    </div>
+    <div id="lista-planes"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/js/admin.js"></script>
+</body>
+</html>

@@ -17,6 +17,7 @@
   <div class="tabs">
     <button id="tab-pedidos" class="activo" onclick="cambiarTab('pedidos')">Pedidos</button>
     <button id="tab-productos" onclick="cambiarTab('productos')">Productos</button>
+    <button id="tab-qr" onclick="cambiarTab('qr')">Mi QR</button>
     <button id="tab-perfil" onclick="cambiarTab('perfil')">Mi comercio</button>
   </div>
 
@@ -45,6 +46,23 @@
     <div id="lista-productos"></div>
   </div>
 
+  <div id="vista-qr" class="oculto">
+    <div class="tarjeta" style="text-align:center;">
+      <h4 style="margin-top:0;">Invitá a tus clientes con tu QR</h4>
+      <p style="color:var(--texto-suave);font-size:13px;">
+        Imprimilo y pegalo en el mostrador, o compartilo por WhatsApp: al escanearlo,
+        tus clientes entran directo a tu vidriera en ComproCerca.
+      </p>
+      <div id="qr-codigo" style="display:flex;justify-content:center;margin:16px 0;"></div>
+      <div class="fila">
+        <input id="qr-link" readonly style="text-align:center;font-size:12px;" />
+        <button class="secundario chico" onclick="copiarLinkQr()">Copiar link</button>
+      </div>
+      <button class="ancho" style="margin-top:14px;" onclick="descargarQr()">Descargar QR</button>
+      <div id="qr-msg" class="ok"></div>
+    </div>
+  </div>
+
   <div id="vista-perfil" class="oculto">
     <div class="tarjeta">
       <label>Dirección</label>
@@ -64,6 +82,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script src="/js/comercio-admin.js"></script>
 </body>
 </html>

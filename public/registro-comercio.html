@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Registrá tu comercio — ComproCerca</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%9B%92%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+<div class="topbar">
+  <a href="/comercio-login.html" class="volver">←</a>
+  <h1>Sumá tu comercio</h1>
+  <span style="width:20px"></span>
+</div>
+<div class="tagline-bar">
+  <span class="tagline-chip">🆓 Empezás gratis</span>
+  <span class="tagline-chip">📱 Recibí pedidos ya</span>
+  <span class="tagline-chip">🔳 Con tu propio QR</span>
+</div>
+
+<div class="contenedor">
+  <div class="tarjeta">
+    <h3 style="margin-top:0;">Contale a tus clientes que ya estás en ComproCerca</h3>
+    <p style="color:var(--texto-suave);font-size:13px;margin-top:-8px;">
+      Cargá tus datos, empezás en el plan Básico (hasta 10 productos) y al toque te damos
+      un QR para que tus clientes empiecen a pedirte desde el celular.
+    </p>
+
+    <label>Nombre del comercio</label>
+    <input id="r-nombre" placeholder="Ej: Despensa Don José" />
+
+    <label>Categoría</label>
+    <input id="r-categoria" placeholder="Despensa, panadería, verdulería..." />
+
+    <label>Teléfono</label>
+    <input id="r-telefono" placeholder="Para que te contacten" />
+
+    <label>Calle</label>
+    <input id="r-calle" placeholder="Nombre de la calle" />
+    <div class="fila">
+      <div>
+        <label>Altura</label>
+        <input id="r-altura" placeholder="Número" inputmode="numeric" />
+      </div>
+      <div>
+        <label>Ciudad</label>
+        <div class="autocomplete-wrap">
+          <input id="r-ciudad" placeholder="Empezá a escribir..." autocomplete="off" />
+          <div id="r-sugerencias" class="autocomplete-lista oculto"></div>
+        </div>
+      </div>
+    </div>
+
+    <label>Ubicación (arrastrá el pin si no quedó exacto)</label>
+    <div id="mapa-registro"></div>
+
+    <label style="display:flex;align-items:center;gap:8px;margin-top:14px;">
+      <input type="checkbox" id="r-envio" style="width:auto;" checked /> Ofrezco envío
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" id="r-retiro" style="width:auto;" checked /> Ofrezco retiro en local
+    </label>
+
+    <div class="fila">
+      <div>
+        <label>Usuario de acceso</label>
+        <input id="r-username" placeholder="Para entrar a tu panel" autocomplete="off" />
+      </div>
+      <div>
+        <label>Contraseña</label>
+        <input id="r-password" type="password" placeholder="Mínimo 6 caracteres" />
+      </div>
+    </div>
+
+    <div id="r-error" class="err"></div>
+    <button class="ancho" style="margin-top:14px;" onclick="registrarComercio()">Crear mi comercio</button>
+  </div>
+
+  <p style="text-align:center;color:var(--texto-suave);font-size:13px;">
+    ¿Ya tenés cuenta? <a href="/comercio-login.html" style="color:var(--verde-oscuro);font-weight:700;">Ingresá acá</a>
+  </p>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/js/registro-comercio.js"></script>
+</body>
+</html>

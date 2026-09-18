@@ -278,7 +278,7 @@ label {
 .err { color: var(--rojo); font-size: 13px; margin-top: 6px; }
 .ok { color: var(--verde-oscuro); font-size: 13px; margin-top: 6px; }
 
-#mapa-picker { height: 260px; border-radius: 8px; margin-top: 6px; }
+#mapa-picker, #mapa-registro { height: 260px; border-radius: 8px; margin-top: 6px; }
 
 #mapa-comercios {
   height: 320px;

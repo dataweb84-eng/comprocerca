@@ -11,6 +11,7 @@ const ETIQUETA_ESTADO = {
 };
 
 let perfil = null;
+let businessId = null;
 
 function beep() {
   try {
@@ -45,6 +46,7 @@ async function init() {
   const res = await fetch('/api/comercio/me');
   if (!res.ok) { location.href = '/comercio-login.html'; return; }
   const me = await res.json();
+  businessId = me.id;
   document.getElementById('nombre-negocio').textContent = me.nombre;
 
   conectarRealtime(me.id);
@@ -52,6 +54,11 @@ async function init() {
   await cargarPerfil();
   await cargarPedidos();
   await cargarProductos();
+  generarQr();
+
+  if (new URLSearchParams(location.search).get('bienvenida') === '1') {
+    cambiarTab('qr');
+  }
 }
 
 function logout() {
@@ -59,10 +66,45 @@ function logout() {
 }
 
 function cambiarTab(tab) {
-  for (const t of ['pedidos', 'productos', 'perfil']) {
+  for (const t of ['pedidos', 'productos', 'qr', 'perfil']) {
     document.getElementById(`vista-${t}`).classList.toggle('oculto', t !== tab);
     document.getElementById(`tab-${t}`).classList.toggle('activo', t === tab);
   }
+}
+
+// --- QR ---
+
+function generarQr() {
+  const url = `${location.origin}/negocio.html?id=${businessId}`;
+  document.getElementById('qr-link').value = url;
+  const cont = document.getElementById('qr-codigo');
+  cont.innerHTML = '';
+  // eslint-disable-next-line no-undef
+  new QRCode(cont, { text: url, width: 200, height: 200, colorDark: '#0f5c40' });
+}
+
+function copiarLinkQr() {
+  const input = document.getElementById('qr-link');
+  input.select();
+  navigator.clipboard
+    ?.writeText(input.value)
+    .then(() => mostrarMsgQr('Copiado ✓'))
+    .catch(() => document.execCommand('copy') && mostrarMsgQr('Copiado ✓'));
+}
+
+function mostrarMsgQr(texto) {
+  const msg = document.getElementById('qr-msg');
+  msg.textContent = texto;
+  setTimeout(() => (msg.textContent = ''), 2000);
+}
+
+function descargarQr() {
+  const canvas = document.querySelector('#qr-codigo canvas');
+  if (!canvas) return;
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = 'mi-qr-comprocerca.png';
+  a.click();
 }
 
 // --- Pedidos ---

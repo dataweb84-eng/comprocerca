@@ -4,6 +4,19 @@ function escapeHtml(str) {
   }[c]));
 }
 
+function iconoCategoria(categoria) {
+  const c = (categoria || '').toLowerCase();
+  if (c.includes('panade') || c.includes('pan')) return '🥖';
+  if (c.includes('verduler') || c.includes('fruter') || c.includes('verdura')) return '🥬';
+  if (c.includes('carnicer') || c.includes('carne')) return '🥩';
+  if (c.includes('farmacia')) return '💊';
+  if (c.includes('kiosco') || c.includes('quiosco')) return '🍬';
+  if (c.includes('almacen') || c.includes('almacén') || c.includes('despensa')) return '🛒';
+  if (c.includes('pescad')) return '🐟';
+  if (c.includes('bebida') || c.includes('vinoteca')) return '🍷';
+  return '🏪';
+}
+
 const STORAGE_KEY = 'cc_ubicacion';
 const BIENVENIDA_KEY = 'cc_bienvenida_vista';
 const RADIO_ZONA_KM = 0.8; // ~8 cuadras
@@ -335,9 +348,12 @@ async function mostrarResultados(loc) {
     if (!Number.isFinite(c.lat) || !Number.isFinite(c.lng)) return;
     const marker = L.marker([c.lat, c.lng]).addTo(mapa);
     const popupHtml = `
-      <strong>${escapeHtml(c.nombre)}</strong><br/>
-      <span style="color:#666;font-size:12px;">${escapeHtml(c.categoria || '')}</span><br/>
-      <a href="/negocio.html?id=${c.id}" style="color:#1a7f5a;font-weight:600;">Ver comercio →</a>
+      <div style="text-align:center;min-width:140px;">
+        <div style="font-size:26px;">${iconoCategoria(c.categoria)}</div>
+        <strong>${escapeHtml(c.nombre)}</strong><br/>
+        <span style="color:#666;font-size:12px;">${escapeHtml(c.categoria || '')}${c.distancia_km != null ? ` · ${c.distancia_km} km` : ''}</span><br/>
+        <a href="/negocio.html?id=${c.id}" style="color:#1a7f5a;font-weight:700;">Ver comercio →</a>
+      </div>
     `;
     marker.bindPopup(popupHtml);
   });
@@ -349,14 +365,15 @@ async function mostrarResultados(loc) {
 }
 
 function renderLista(comercios) {
-  document.getElementById('lista').innerHTML = comercios.map((c) => `
-    <div class="tarjeta comercio-card" onclick="location.href='/negocio.html?id=${c.id}'">
-      <div class="info">
+  document.getElementById('lista').innerHTML = comercios.map((c, i) => `
+    <div class="tarjeta comercio-card" style="animation-delay:${Math.min(i * 60, 400)}ms" onclick="location.href='/negocio.html?id=${c.id}'">
+      <div class="icono">${iconoCategoria(c.categoria)}</div>
+      <div class="info" style="flex:1;">
         <h3>${escapeHtml(c.nombre)}</h3>
         <p>${escapeHtml(c.categoria || '')} · ${escapeHtml(c.direccion || '')}</p>
         <div class="badges">
-          ${c.acepta_envio ? '<span class="badge">Envío</span>' : ''}
-          ${c.acepta_retiro ? '<span class="badge naranja">Retiro en local</span>' : ''}
+          ${c.acepta_envio ? '<span class="badge">🚚 Envío</span>' : ''}
+          ${c.acepta_retiro ? '<span class="badge naranja">🏬 Retiro en local</span>' : ''}
         </div>
       </div>
       ${c.distancia_km != null ? `<div class="distancia">${c.distancia_km} km</div>` : ''}

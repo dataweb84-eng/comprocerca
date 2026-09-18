@@ -4,6 +4,19 @@ function escapeHtml(str) {
   }[c]));
 }
 
+function iconoCategoria(categoria) {
+  const c = (categoria || '').toLowerCase();
+  if (c.includes('panade') || c.includes('pan')) return '🥖';
+  if (c.includes('verduler') || c.includes('fruter') || c.includes('verdura')) return '🥬';
+  if (c.includes('carnicer') || c.includes('carne')) return '🥩';
+  if (c.includes('farmacia')) return '💊';
+  if (c.includes('kiosco') || c.includes('quiosco')) return '🍬';
+  if (c.includes('almacen') || c.includes('almacén') || c.includes('despensa')) return '🛒';
+  if (c.includes('pescad')) return '🐟';
+  if (c.includes('bebida') || c.includes('vinoteca')) return '🍷';
+  return '🏪';
+}
+
 const params = new URLSearchParams(location.search);
 const businessId = params.get('id');
 let comercio = null;
@@ -17,7 +30,7 @@ async function cargar() {
     return;
   }
   comercio = await res.json();
-  document.getElementById('nombre-comercio').textContent = comercio.nombre;
+  document.getElementById('nombre-comercio').textContent = `${iconoCategoria(comercio.categoria)} ${comercio.nombre}`;
 
   const cont = document.getElementById('contenido');
   if (comercio.productos.length === 0) {
@@ -26,10 +39,10 @@ async function cargar() {
   }
   cont.innerHTML = `
     <div class="tarjeta">
-      <p style="margin:0;color:var(--texto-suave);font-size:13px;">${escapeHtml(comercio.direccion || '')}</p>
+      <p style="margin:0;color:var(--texto-suave);font-size:13px;">${escapeHtml(comercio.categoria || '')} · ${escapeHtml(comercio.direccion || '')}</p>
       <div class="badges">
-        ${comercio.acepta_envio ? '<span class="badge">Envío</span>' : ''}
-        ${comercio.acepta_retiro ? '<span class="badge naranja">Retiro en local</span>' : ''}
+        ${comercio.acepta_envio ? '<span class="badge">🚚 Envío</span>' : ''}
+        ${comercio.acepta_retiro ? '<span class="badge naranja">🏬 Retiro en local</span>' : ''}
       </div>
     </div>
     <div class="tarjeta">

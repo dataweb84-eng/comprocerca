@@ -12,6 +12,7 @@ const ETIQUETA_ESTADO = {
 
 let perfil = null;
 let businessId = null;
+const ALIAS_MP = 'danielmfaggi';
 
 function beep() {
   try {
@@ -54,6 +55,7 @@ async function init() {
   await cargarPerfil();
   await cargarPedidos();
   await cargarProductos();
+  await renderPlanes();
   generarQr();
 
   if (new URLSearchParams(location.search).get('bienvenida') === '1') {
@@ -66,7 +68,7 @@ function logout() {
 }
 
 function cambiarTab(tab) {
-  for (const t of ['pedidos', 'productos', 'qr', 'perfil']) {
+  for (const t of ['pedidos', 'productos', 'qr', 'planes', 'perfil']) {
     document.getElementById(`vista-${t}`).classList.toggle('oculto', t !== tab);
     document.getElementById(`tab-${t}`).classList.toggle('activo', t === tab);
   }
@@ -105,6 +107,70 @@ function descargarQr() {
   a.href = canvas.toDataURL('image/png');
   a.download = 'mi-qr-comprocerca.png';
   a.click();
+}
+
+// --- Planes ---
+
+function formatoPrecio(precio) {
+  const n = parseFloat(precio);
+  if (!n) return 'Gratis';
+  return `$${n.toLocaleString('es-AR')}/mes`;
+}
+
+async function renderPlanes() {
+  const planes = await fetch('/api/planes').then((r) => r.json());
+
+  document.getElementById('plan-actual-info').innerHTML = `
+    <h4 style="margin:0 0 4px;">Tu plan actual: ${escapeHtml(perfil.plan_nombre || '')}</h4>
+    <p style="margin:0;color:var(--texto-suave);font-size:13px;">
+      ${formatoPrecio(perfil.plan_precio)} · usás ${perfil.productos_usados} de ${perfil.max_productos} productos
+    </p>
+  `;
+
+  const solicitudEl = document.getElementById('plan-solicitud-info');
+  if (perfil.plan_solicitado_id) {
+    solicitudEl.innerHTML = `
+      <div class="aviso">
+        ⏳ Pediste pasar al <strong>${escapeHtml(perfil.plan_solicitado_nombre)}</strong>
+        (${formatoPrecio(perfil.plan_solicitado_precio)}). Transferí ese monto al alias de
+        Mercado Pago <strong>${ALIAS_MP}</strong> — apenas se acredite, te habilitamos el plan
+        (puede demorar unas horas).
+      </div>
+    `;
+  } else {
+    solicitudEl.innerHTML = '';
+  }
+
+  document.getElementById('lista-planes-comercio').innerHTML = planes
+    .map((p) => {
+      const esActual = p.id === perfil.plan_id;
+      const esSolicitado = p.id === perfil.plan_solicitado_id;
+      let accion = `<button class="chico" onclick="solicitarPlan(${p.id}, '${escapeHtml(p.nombre)}', ${p.precio})">Quiero este plan</button>`;
+      if (esActual) accion = '<span class="badge">✅ Tu plan actual</span>';
+      else if (esSolicitado) accion = '<span class="badge naranja">⏳ Pendiente de pago</span>';
+      return `
+        <div class="tarjeta" style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <h4 style="margin:0;">${escapeHtml(p.nombre)}</h4>
+            <p style="margin:2px 0;font-size:13px;color:var(--texto-suave);">${escapeHtml(p.descripcion || '')}</p>
+            <p style="margin:0;font-size:14px;font-weight:700;color:var(--verde-oscuro);">${formatoPrecio(p.precio)}</p>
+          </div>
+          ${accion}
+        </div>
+      `;
+    })
+    .join('');
+}
+
+async function solicitarPlan(planId, nombre, precio) {
+  if (!confirm(`¿Confirmás que querés pasar al ${nombre} (${formatoPrecio(precio)})?`)) return;
+  await fetch('/api/comercio/solicitar-plan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ plan_id: planId }),
+  });
+  await cargarPerfil();
+  await renderPlanes();
 }
 
 // --- Pedidos ---

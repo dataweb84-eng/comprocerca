@@ -18,6 +18,7 @@
     <button id="tab-pedidos" class="activo" onclick="cambiarTab('pedidos')">Pedidos</button>
     <button id="tab-productos" onclick="cambiarTab('productos')">Productos</button>
     <button id="tab-qr" onclick="cambiarTab('qr')">Mi QR</button>
+    <button id="tab-planes" onclick="cambiarTab('planes')">Planes</button>
     <button id="tab-perfil" onclick="cambiarTab('perfil')">Mi comercio</button>
   </div>
 
@@ -60,6 +61,17 @@
       </div>
       <button class="ancho" style="margin-top:14px;" onclick="descargarQr()">Descargar QR</button>
       <div id="qr-msg" class="ok"></div>
+    </div>
+  </div>
+
+  <div id="vista-planes" class="oculto">
+    <div id="plan-actual-info" class="tarjeta"></div>
+    <div id="plan-solicitud-info"></div>
+    <div id="lista-planes-comercio"></div>
+    <div class="tarjeta">
+      <p style="margin:0;font-size:12px;color:var(--texto-suave);">
+        💬 ¿Dudas sobre los planes? Escribinos y te ayudamos a elegir el que mejor te sirve.
+      </p>
     </div>
   </div>
 

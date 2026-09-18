@@ -57,7 +57,7 @@ async function cargarComercios() {
   const res = await fetch('/api/admin/businesses');
   const comercios = await res.json();
   document.getElementById('lista-comercios').innerHTML = comercios.map((c) => `
-    <div class="tarjeta">
+    <div class="tarjeta ${c.plan_solicitado_id ? 'pedido-card' : ''}">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
           <h4 style="margin:0;">${escapeHtml(c.nombre)} ${c.activo ? '' : '<span style="color:var(--rojo);">(inactivo)</span>'}</h4>
@@ -65,6 +65,16 @@ async function cargarComercios() {
           <p style="margin:0;font-size:12px;color:var(--texto-suave);">Usuario: ${escapeHtml(c.username)} · Plan: ${escapeHtml(c.plan_nombre || '—')}</p>
         </div>
       </div>
+      ${c.plan_solicitado_id ? `
+        <div class="aviso" style="margin-top:10px;margin-bottom:0;">
+          🔔 Pidió pasar a <strong>${escapeHtml(c.plan_solicitado_nombre)}</strong> ($${Number(c.plan_solicitado_precio).toLocaleString('es-AR')}/mes).
+          Verificá la transferencia a tu alias de Mercado Pago antes de aprobar.
+          <div class="fila" style="margin-top:8px;">
+            <button class="chico" onclick="aprobarPlan(${c.id})">✅ Aprobar</button>
+            <button class="chico secundario" onclick="rechazarPlan(${c.id})">Rechazar</button>
+          </div>
+        </div>
+      ` : ''}
       <div class="fila" style="margin-top:10px;">
         <button class="chico secundario" onclick='editarComercio(${JSON.stringify(c)})'>Editar</button>
         <button class="chico secundario" onclick="toggleActivo(${c.id}, ${c.activo ? 'false' : 'true'})">${c.activo ? 'Desactivar' : 'Activar'}</button>
@@ -72,6 +82,19 @@ async function cargarComercios() {
       </div>
     </div>
   `).join('') || '<div class="estado-vacio">Todavía no hay comercios cargados.</div>';
+}
+
+async function aprobarPlan(id) {
+  const res = await fetch(`/api/admin/businesses/${id}/aprobar-plan`, { method: 'POST' });
+  const data = await res.json();
+  if (!res.ok) { alert(data.error || 'No se pudo aprobar el plan'); return; }
+  cargarComercios();
+}
+
+async function rechazarPlan(id) {
+  if (!confirm('¿Rechazar el pedido de cambio de plan?')) return;
+  await fetch(`/api/admin/businesses/${id}/rechazar-plan`, { method: 'POST' });
+  cargarComercios();
 }
 
 function poblarSelectPlanes(selectedId) {

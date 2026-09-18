@@ -65,9 +65,12 @@ router.get(
   asyncHandler(async (req, res) => {
     const businesses = await db.all(
       `SELECT b.id, b.nombre, b.categoria, b.direccion, b.lat, b.lng, b.telefono, b.activo,
-              b.acepta_envio, b.acepta_retiro, b.username, b.plan_id, p.nombre AS plan_nombre
-       FROM businesses b LEFT JOIN plans p ON p.id = b.plan_id
-       ORDER BY b.id DESC`
+              b.acepta_envio, b.acepta_retiro, b.username, b.plan_id, p.nombre AS plan_nombre,
+              b.plan_solicitado_id, ps.nombre AS plan_solicitado_nombre, ps.precio AS plan_solicitado_precio
+       FROM businesses b
+       LEFT JOIN plans p ON p.id = b.plan_id
+       LEFT JOIN plans ps ON ps.id = b.plan_solicitado_id
+       ORDER BY b.plan_solicitado_id IS NULL, b.id DESC`
     );
     res.json(businesses);
   })
@@ -139,9 +142,16 @@ router.put(
       password,
     } = req.body || {};
 
+    const nuevoPlanId = plan_id ?? business.plan_id;
+    // Si el admin cambia el plan a mano desde acá, ya sea al que habían
+    // pedido o a otro, se da por atendida la solicitud pendiente.
+    const limpiarSolicitud = String(nuevoPlanId) !== String(business.plan_id);
+
     await db.run(
       `UPDATE businesses SET nombre = $1, categoria = $2, direccion = $3, lat = $4, lng = $5, telefono = $6,
-        plan_id = $7, activo = $8, acepta_envio = $9, acepta_retiro = $10 WHERE id = $11`,
+        plan_id = $7, activo = $8, acepta_envio = $9, acepta_retiro = $10,
+        plan_solicitado_id = CASE WHEN $12 THEN NULL ELSE plan_solicitado_id END
+       WHERE id = $11`,
       [
         nombre ?? business.nombre,
         categoria ?? business.categoria,
@@ -149,11 +159,12 @@ router.put(
         Number.isFinite(parseFloat(lat)) ? parseFloat(lat) : business.lat,
         Number.isFinite(parseFloat(lng)) ? parseFloat(lng) : business.lng,
         telefono ?? business.telefono,
-        plan_id ?? business.plan_id,
+        nuevoPlanId,
         activo === undefined ? business.activo : !!activo,
         acepta_envio === undefined ? business.acepta_envio : !!acepta_envio,
         acepta_retiro === undefined ? business.acepta_retiro : !!acepta_retiro,
         business.id,
+        limpiarSolicitud,
       ]
     );
 
@@ -162,6 +173,28 @@ router.put(
       await db.run('UPDATE businesses SET password_hash = $1 WHERE id = $2', [hash, business.id]);
     }
 
+    res.json({ ok: true });
+  })
+);
+
+router.post(
+  '/businesses/:id/aprobar-plan',
+  asyncHandler(async (req, res) => {
+    const business = await db.get('SELECT * FROM businesses WHERE id = $1', [req.params.id]);
+    if (!business) return res.status(404).json({ error: 'Comercio no encontrado' });
+    if (!business.plan_solicitado_id) return res.status(400).json({ error: 'Este comercio no pidió cambiar de plan' });
+
+    await db.run('UPDATE businesses SET plan_id = plan_solicitado_id, plan_solicitado_id = NULL WHERE id = $1', [
+      business.id,
+    ]);
+    res.json({ ok: true });
+  })
+);
+
+router.post(
+  '/businesses/:id/rechazar-plan',
+  asyncHandler(async (req, res) => {
+    await db.run('UPDATE businesses SET plan_solicitado_id = NULL WHERE id = $1', [req.params.id]);
     res.json({ ok: true });
   })
 );

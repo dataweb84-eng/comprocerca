@@ -24,6 +24,16 @@ router.get('/config', (req, res) => {
   });
 });
 
+// Precios de los planes: son públicos (se muestran en el panel del
+// comerciante y podrían mostrarse en una futura página de precios).
+router.get(
+  '/planes',
+  asyncHandler(async (req, res) => {
+    const planes = await db.all('SELECT id, nombre, max_productos, precio, descripcion FROM plans ORDER BY max_productos ASC');
+    res.json(planes);
+  })
+);
+
 // Proxy a la API pública GeoRef (datos.gob.ar) para autocompletar ciudades
 // de todo el país sin tener que embeber un listado gigante en el frontend.
 router.get(

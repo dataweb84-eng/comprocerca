@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS businesses (
   lng DOUBLE PRECISION,
   telefono TEXT DEFAULT '',
   plan_id INTEGER REFERENCES plans(id),
+  plan_solicitado_id INTEGER REFERENCES plans(id),
   activo BOOLEAN NOT NULL DEFAULT true,
   acepta_envio BOOLEAN NOT NULL DEFAULT true,
   acepta_retiro BOOLEAN NOT NULL DEFAULT true,
@@ -101,6 +102,9 @@ CREATE TABLE IF NOT EXISTS order_events (
 );
 
 ALTER TABLE order_events ENABLE ROW LEVEL SECURITY;
+
+-- Por si la tabla ya existía de antes de que agregáramos esta columna.
+ALTER TABLE businesses ADD COLUMN IF NOT EXISTS plan_solicitado_id INTEGER REFERENCES plans(id);
 `;
 
 const REALTIME_SETUP = `
@@ -124,11 +128,14 @@ async function seed() {
   if (planCount === 0) {
     await run(
       `INSERT INTO plans (nombre, max_productos, precio, descripcion) VALUES
-       ('Básico', 10, 5000, 'Hasta 10 productos publicados'),
-       ('Pro', 30, 12000, 'Hasta 30 productos publicados'),
-       ('Premium', 999, 20000, 'Productos ilimitados')`
+       ('Gratis', 5, 0, 'Hasta 5 productos, para mostrar tu comercio'),
+       ('Plan 10', 10, 10000, 'Hasta 10 productos'),
+       ('Plan 20', 20, 20000, 'Hasta 20 productos'),
+       ('Plan 40', 40, 35000, 'Hasta 40 productos'),
+       ('Plan 100', 100, 80000, 'Hasta 100 productos'),
+       ('Plan Ilimitado', 999999, 100000, 'Productos ilimitados')`
     );
-    console.log('[seed] Planes creados: Básico, Pro, Premium');
+    console.log('[seed] Planes creados: Gratis, Plan 10, Plan 20, Plan 40, Plan 100, Plan Ilimitado');
   }
 
   const { c: adminCount } = await get('SELECT COUNT(*)::int AS c FROM admin_users');
@@ -145,9 +152,49 @@ async function seed() {
   }
 }
 
+// Migración de una sola vez: pasa del esquema viejo de planes
+// (Básico/Pro/Premium) al esquema de precios real con pago manual por
+// transferencia. Se identifica por nombre y es idempotente: una vez migrado,
+// esos nombres ya no existen y no vuelve a tocar nada.
+async function migrarPlanes() {
+  await run(
+    `UPDATE plans SET nombre = 'Gratis', max_productos = 5, precio = 0,
+       descripcion = 'Hasta 5 productos, para mostrar tu comercio'
+     WHERE nombre = 'Básico'`
+  );
+  await run(
+    `UPDATE plans SET nombre = 'Plan 10', max_productos = 10, precio = 10000,
+       descripcion = 'Hasta 10 productos'
+     WHERE nombre = 'Pro'`
+  );
+  await run(
+    `UPDATE plans SET nombre = 'Plan 20', max_productos = 20, precio = 20000,
+       descripcion = 'Hasta 20 productos'
+     WHERE nombre = 'Premium'`
+  );
+
+  const faltantes = [
+    ['Plan 40', 40, 35000, 'Hasta 40 productos'],
+    ['Plan 100', 100, 80000, 'Hasta 100 productos'],
+    ['Plan Ilimitado', 999999, 100000, 'Productos ilimitados'],
+  ];
+  for (const [nombre, max, precio, descripcion] of faltantes) {
+    const existe = await get('SELECT id FROM plans WHERE nombre = $1', [nombre]);
+    if (!existe) {
+      await run('INSERT INTO plans (nombre, max_productos, precio, descripcion) VALUES ($1, $2, $3, $4)', [
+        nombre,
+        max,
+        precio,
+        descripcion,
+      ]);
+    }
+  }
+}
+
 async function init() {
   await pool.query(SCHEMA);
   await seed();
+  await migrarPlanes();
   try {
     await pool.query(REALTIME_SETUP);
   } catch (err) {

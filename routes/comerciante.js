@@ -12,8 +12,12 @@ router.get(
   asyncHandler(async (req, res) => {
     const business = await db.get(
       `SELECT b.id, b.nombre, b.categoria, b.direccion, b.telefono, b.acepta_envio, b.acepta_retiro,
-              p.nombre AS plan_nombre, p.max_productos
-       FROM businesses b LEFT JOIN plans p ON p.id = b.plan_id
+              b.plan_id, b.plan_solicitado_id,
+              p.nombre AS plan_nombre, p.max_productos, p.precio AS plan_precio,
+              ps.nombre AS plan_solicitado_nombre, ps.precio AS plan_solicitado_precio
+       FROM businesses b
+       LEFT JOIN plans p ON p.id = b.plan_id
+       LEFT JOIN plans ps ON ps.id = b.plan_solicitado_id
        WHERE b.id = $1`,
       [req.session.businessId]
     );
@@ -21,6 +25,21 @@ router.get(
       req.session.businessId,
     ]);
     res.json({ ...business, productos_usados: productCount });
+  })
+);
+
+router.post(
+  '/solicitar-plan',
+  asyncHandler(async (req, res) => {
+    const { plan_id } = req.body || {};
+    const plan = await db.get('SELECT * FROM plans WHERE id = $1', [plan_id]);
+    if (!plan) return res.status(400).json({ error: 'Plan inválido' });
+
+    await db.run('UPDATE businesses SET plan_solicitado_id = $1 WHERE id = $2', [
+      plan.id,
+      req.session.businessId,
+    ]);
+    res.json({ ok: true });
   })
 );
 
